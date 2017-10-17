@@ -1,0 +1,2 @@
+allow sdcardd unlabeled:dir { search getattr read write open };
+allow sdcardd unlabeled:filesystem getattr;

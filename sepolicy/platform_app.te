@@ -1,0 +1,4 @@
+#ZHong car relate add by lihw begin
+#mcuserver
+allow platform_app mcuserver_service:service_manager find;
+#ZHong car relate add by lihw end

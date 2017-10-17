@@ -1,0 +1,5 @@
+allow init tmpfs:lnk_file create;
+allow init kernel:system module_request;
+allow init configfs:file write;
+allow init configfs:lnk_file { create unlink };
+allow init sysfs:dir write;

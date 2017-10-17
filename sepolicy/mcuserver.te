@@ -1,0 +1,19 @@
+type mcuserver, domain;
+type mcuserver_exec, exec_type, file_type;
+
+# class service_manager
+allow mcuserver mcuserver_service:service_manager add;
+
+typeattribute mcuserver mlstrustedsubject;
+
+init_daemon_domain(mcuserver)
+
+binder_use(mcuserver)
+binder_call(mcuserver, binderservicedomain)
+binder_service(mcuserver)
+
+allow mcuserver self:process execmem;
+allow mcuserver self:capability { dac_override };
+
+allow mcuserver console_device:chr_file { read write open ioctl };
+allow mcuserver untrusted_app:binder { call };

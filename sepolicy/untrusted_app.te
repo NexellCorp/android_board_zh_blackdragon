@@ -1,0 +1,1 @@
+allow untrusted_app mcuserver_service:service_manager find;

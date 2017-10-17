@@ -1,0 +1,9 @@
+<mixer>
+  <!-- These are the initial mixer settings -->
+  <ctl name="Left Mixer Playback Switch" value="1" />
+  <ctl name="Right Mixer Playback Switch" value="1" />
+
+  <ctl name="Capture Switch" value="1" />
+  <ctl name="Left PGA Mux" value="Line 2" />
+  <ctl name="Right PGA Mux" value="Line 2" />
+</mixer>

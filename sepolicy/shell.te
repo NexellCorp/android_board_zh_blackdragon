@@ -1,0 +1,2 @@
+allow shell device:dir { open read };
+allow shell debugfs:dir read;

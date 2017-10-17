@@ -1,0 +1,14 @@
+type gocsdk, domain;
+type gocsdk_exec, exec_type, file_type;
+
+init_daemon_domain(gocsdk)
+allow gocsdk device:dir add_name;
+allow gocsdk self:file execmod;
+
+allow gocsdk gocsdk:capability dac_override;
+allow gocsdk shell_exec:file execute;
+
+allow gocsdk shell_exec:file execute_no_trans;
+allow gocsdk proc:file write;
+allow gocsdk device:dir write;
+allow gocsdk device:dir remove_name;

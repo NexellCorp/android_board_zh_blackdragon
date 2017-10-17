@@ -1,0 +1,1069 @@
+diff --git services/core/java/com/android/server/audio/AudioService.java services/core/java/com/android/server/audio/AudioService.java
+index c70a87c..3015eda 100644
+--- services/core/java/com/android/server/audio/AudioService.java
++++ services/core/java/com/android/server/audio/AudioService.java
+@@ -21,13 +21,14 @@ import static android.media.AudioManager.RINGER_MODE_NORMAL;
+ import static android.media.AudioManager.RINGER_MODE_SILENT;
+ import static android.media.AudioManager.RINGER_MODE_VIBRATE;
+ import static android.os.Process.FIRST_APPLICATION_UID;
+-
++import com.android.internal.R;
+ import android.Manifest;
+ import android.app.ActivityManager;
+ import android.app.ActivityManagerInternal;
+ import android.app.ActivityManagerNative;
+ import android.app.AppGlobals;
+ import android.app.AppOpsManager;
++import android.app.ActivityManager.RunningAppProcessInfo;
+ import android.app.NotificationManager;
+ import android.bluetooth.BluetoothA2dp;
+ import android.bluetooth.BluetoothAdapter;
+@@ -154,7 +155,7 @@ public class AudioService extends IAudioService.Stub {
+     protected static final boolean DEBUG_VOL = Log.isLoggable(TAG + ".VOL", Log.DEBUG);
+ 
+     /** debug calls to devices APIs */
+-    protected static final boolean DEBUG_DEVICES = Log.isLoggable(TAG + ".DEVICES", Log.DEBUG);
++    protected static final boolean DEBUG_DEVICES = true;//Log.isLoggable(TAG + ".DEVICES", Log.DEBUG);
+ 
+     /** How long to delay before persisting a change in volume/ringer mode. */
+     private static final int PERSIST_DELAY = 500;
+@@ -260,17 +261,19 @@ public class AudioService extends IAudioService.Stub {
+     private final int[][] SOUND_EFFECT_FILES_MAP = new int[AudioManager.NUM_SOUND_EFFECTS][2];
+ 
+    /** Maximum volume index values for audio streams */
+-    private static int[] MAX_STREAM_VOLUME = new int[] {
+-        5,  // STREAM_VOICE_CALL
+-        7,  // STREAM_SYSTEM
+-        7,  // STREAM_RING
+-        15, // STREAM_MUSIC
+-        7,  // STREAM_ALARM
+-        7,  // STREAM_NOTIFICATION
+-        15, // STREAM_BLUETOOTH_SCO
+-        7,  // STREAM_SYSTEM_ENFORCED
+-        15, // STREAM_DTMF
+-        15  // STREAM_TTS
++	//ZHong car relate add by lihw begin
++    public static int[] MAX_STREAM_VOLUME = new int[] {
++	//ZHong car relate add by lihw end
++        32,  // STREAM_VOICE_CALL
++        32,  // STREAM_SYSTEM
++        32,  // STREAM_RING
++        32, // STREAM_MUSIC
++        32,  // STREAM_ALARM
++        32,  // STREAM_NOTIFICATION
++        32, // STREAM_BLUETOOTH_SCO
++        32,  // STREAM_SYSTEM_ENFORCED
++        32, // STREAM_DTMF
++        32, // STREAM_TTS
+     };
+ 
+     /** Minimum volume index values for audio streams */
+@@ -281,10 +284,10 @@ public class AudioService extends IAudioService.Stub {
+         0,  // STREAM_MUSIC
+         0,  // STREAM_ALARM
+         0,  // STREAM_NOTIFICATION
+-        0,  // STREAM_BLUETOOTH_SCO
++        1,  // STREAM_BLUETOOTH_SCO
+         0,  // STREAM_SYSTEM_ENFORCED
+         0,  // STREAM_DTMF
+-        0   // STREAM_TTS
++        0,  // STREAM_TTS
+     };
+ 
+     /* mStreamVolumeAlias[] indicates for each stream if it uses the volume settings
+@@ -558,6 +561,10 @@ public class AudioService extends IAudioService.Stub {
+     private AudioManagerInternal.RingerModeDelegate mRingerModeDelegate;
+     private VolumePolicy mVolumePolicy = VolumePolicy.DEFAULT;
+     private long mLoweredFromNormalToVibrateTime;
++	
++	//ZHong car relate add by lihw begin
++	private ZHAudioService mZhAudioService = null;
++	//ZHong car relate add by lihw end
+ 
+     // Intent "extra" data keys.
+     public static final String CONNECT_INTENT_KEY_PORT_NAME = "portName";
+@@ -605,7 +612,7 @@ public class AudioService extends IAudioService.Stub {
+         mAppOps = (AppOpsManager)context.getSystemService(Context.APP_OPS_SERVICE);
+ 
+         mPlatformType = AudioSystem.getPlatformType(context);
+-
++		
+         mUserManagerInternal = LocalServices.getService(UserManagerInternal.class);
+ 
+         PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
+@@ -717,6 +724,9 @@ public class AudioService extends IAudioService.Stub {
+     }
+ 
+     public void onSystemReady() {
++        //ZHong car relate add by lihw begin
++		mZhAudioService = new ZHAudioService(mContext);
++		//ZHong car relate add by lihw end
+         mSystemReady = true;
+         sendMsg(mAudioHandler, MSG_LOAD_SOUND_EFFECTS, SENDMSG_QUEUE,
+                 0, 0, null, 0);
+@@ -1212,11 +1222,20 @@ public class AudioService extends IAudioService.Stub {
+         if (mUseFixedVolume) {
+             return;
+         }
+-        if (DEBUG_VOL) Log.d(TAG, "adjustStreamVolume() stream=" + streamType + ", dir=" + direction
+-                + ", flags=" + flags + ", caller=" + caller);
++        Log.d(TAG, "adjustStreamVolume() stream=" + streamType + ", dir=" + direction
++                + ", flags=" + flags + ", caller=" + caller + "callingPackage:" + callingPackage);
+ 
+         ensureValidDirection(direction);
+         ensureValidStreamType(streamType);
++		//ZHong car relate add by lihw begin
++        if (isAllowChangedStreamVolume(callingPackage)) {
++            if(mZhAudioService != null && mZhAudioService.adjustMainBoradVolume(streamType,direction,flags))
++            {      
++                Log.d(TAG, "adjustStreamVolume stream:"+streamType+"direction:"+direction+"flags:"+flags+"return....");     
++                return ;    
++            }
++        }
++		//ZHong car relate add by lihw end
+ 
+         boolean isMuteAdjust = isMuteAdjust(direction);
+ 
+@@ -1523,8 +1542,26 @@ public class AudioService extends IAudioService.Stub {
+         if (mUseFixedVolume) {
+             return;
+         }
+-
++        
++        Log.d(TAG," setStreamVolume pkg:" + callingPackage + " streamtype:" + streamType + " index:"+ index + " flag:" + flags);
+         ensureValidStreamType(streamType);
++
++		//ZHong car relate add by lihw begin 
++        if (isAllowChangedStreamVolume(callingPackage)) {
++          //add for adjust muc volume     
++            if(mZhAudioService != null && mZhAudioService.setMainBoradVolume(streamType,index,flags))
++            {
++                final int device = getDeviceForStream(streamType);
++                int streamTypeAlias = mStreamVolumeAlias[streamType];
++                
++                index = rescaleIndex(32 * 10, streamType, streamTypeAlias);                
++                setStreamVolumeInt(streamType, index, device, false, caller);           
++                Log.d(TAG, "adjust stream:"+streamType+"index:"+index+"flags:"+flags+"return....");     
++                
++                return ;    
++            }
++        }
++		//ZHong car relate add by lihw end
+         int streamTypeAlias = mStreamVolumeAlias[streamType];
+         VolumeStreamState streamState = mStreamStates[streamTypeAlias];
+ 
+@@ -1619,6 +1656,44 @@ public class AudioService extends IAudioService.Stub {
+         }
+         return true;
+     }
++	
++	//ZHong car relate add by lihw begin 
++	    private boolean isAllowChangedStreamVolume(String pkg) {
++        ArrayList<String> appsList = new ArrayList<String>();
++        /*String[] apps = mContext.getResources().getStringArray(R.array.allow_set_volume_apps);
++        for (String app : apps) {
++            appsList.add(app);
++        }*/
++		appsList.add("com.android.settings");
++        
++        String persistApp = SystemProperties.get("persist.set.volume.list");
++        if (persistApp.length() > 0) {
++            TextUtils.StringSplitter splitter = new TextUtils.SimpleStringSplitter(',');
++            splitter.setString(persistApp);
++            for (String s : splitter) {
++                appsList.add(s);
++            }
++            
++        }
++        return appsList.contains(pkg);
++    }
++    
++    private String getPkgByPid(int pid) {
++        ActivityManager am = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
++        try {
++            List<RunningAppProcessInfo> processes = am.getRunningAppProcesses();
++            PackageManager pm = mContext.getPackageManager();
++            for (RunningAppProcessInfo process : processes) {
++                if (process.pid == pid) {
++                    return process.processName;
++                }
++            }
++        } catch (Exception e){
++            e.printStackTrace();
++        }
++        return "";
++    }
++	//ZHong car relate add by lihw end
+ 
+     /** @see AudioManager#forceVolumeControlStream(int) */
+     public void forceVolumeControlStream(int streamType, IBinder cb) {
+@@ -1916,6 +1991,41 @@ public class AudioService extends IAudioService.Stub {
+                 != PackageManager.PERMISSION_GRANTED) {
+             return;
+         }
++		
++		//ZHong car relate add by lihw begin
++        if (getCurrentUserId() == userId) {
++            if (mute != AudioSystem.getMasterMute()) {
++                //add by zhonggp for zhaudioserver start 20160115 @{			 
++                if(mZhAudioService != null){
++                    mZhAudioService.setMasterMute(mute, flags);
++                    int streamTypes = AudioSystem.getNumStreamTypes();
++                    if (mute) {
++                        for (int i = 0; i < streamTypes; i ++) {
++                            if (i == AudioSystem.STREAM_ALARM
++                                    || i == AudioSystem.STREAM_BLUETOOTH_SCO
++                                    || i == AudioSystem.STREAM_VOICE_CALL) {
++                                continue;
++                            }
++                            setStreamVolume(i, 0, 0, mContext.getPackageName());
++                        }
++                        
++                    } else {
++                        for (int i = 0; i < streamTypes; i ++) {
++                            if (i == AudioSystem.STREAM_ALARM
++                                    || i == AudioSystem.STREAM_BLUETOOTH_SCO
++                                    || i == AudioSystem.STREAM_VOICE_CALL) {
++                                continue;
++                            }
++                            setStreamVolume(i, AudioSystem.DEFAULT_STREAM_VOLUME[i], 0, mContext.getPackageName());
++                        }
++                    }
++                }else{              
++                    if (DEBUG_VOL) Log.d(TAG, "set master mute zhAudioServer is nlll");             
++                }
++			}
++		}
++		//ZHong car relate add by lihw end
++				
+         setMasterMuteInternalNoCallerCheck(mute, flags, userId);
+     }
+ 
+@@ -1941,17 +2051,40 @@ public class AudioService extends IAudioService.Stub {
+ 
+     /** get master mute state. */
+     public boolean isMasterMute() {
++       //ZHong car relate add by lihw begin		
++       if(mZhAudioService != null){			
++            return mZhAudioService.isMasterMute();      
++       }else{          
++            if (DEBUG_VOL) Log.d(TAG, "isMasterMute zhAudioServer is nlll");        
++       }   
++		//ZHong car relate add by lihw end
+         return AudioSystem.getMasterMute();
+     }
+ 
+     public void setMasterMute(boolean mute, int flags, String callingPackage, int userId) {
+         setMasterMuteInternal(mute, flags, callingPackage, Binder.getCallingUid(),
+                 userId);
++        Log.i(TAG, "setMasterMute:" +  mute + "  callingPackage:" + callingPackage);
+     }
+ 
+     /** @see AudioManager#getStreamVolume(int) */
+     public int getStreamVolume(int streamType) {
+         ensureValidStreamType(streamType);
++        //ZHong car relate add by lihw begin
++        if (mZhAudioService != null) {
++            int ret = mZhAudioService.getStreamVolume(streamType);
++            if(ret >= 0)
++            {
++                return ret;
++            }
++        }
++         
++        if(streamType == -1) 
++            streamType = AudioManager.STREAM_MUSIC;    
++        //ZHong car relate add by lihw end   
++
++
++            
+         int device = getDeviceForStream(streamType);
+         synchronized (VolumeStreamState.class) {
+             int index = mStreamStates[streamType].getIndex(device);
+@@ -2518,9 +2651,15 @@ public class AudioService extends IAudioService.Stub {
+             Log.w(TAG, "AudioService effectType value " + effectType + " out of range");
+             return;
+         }
+-
+-        sendMsg(mAudioHandler, MSG_PLAY_SOUND_EFFECT, SENDMSG_QUEUE,
+-                effectType, (int) (volume * 1000), null, 0);
++        //ZHong car relate add by lihw begin
++        /*sendMsg(mAudioHandler, MSG_PLAY_SOUND_EFFECT, SENDMSG_QUEUE,
++                effectType, (int) (volume * 1000), null, 0);*/
++        if (mZhAudioService != null) {
++            mZhAudioService.playSoundEffect();
++        } else {
++            android.util.Log.i(TAG, "playSoundEffectVolume,mZhAudioService is null");
++        }
++        //ZHong car relate add by lihw end
+     }
+ 
+     /**
+diff --git services/core/java/com/android/server/audio/IMcuService.java services/core/java/com/android/server/audio/IMcuService.java
+new file mode 100644
+index 0000000..926ec97
+--- /dev/null
++++ services/core/java/com/android/server/audio/IMcuService.java
+@@ -0,0 +1,198 @@
++package com.android.server.audio;
++
++import android.os.Parcel;
++import android.os.RemoteException;
++import android.util.Log;
++
++public interface IMcuService extends android.os.IInterface {
++	/** Local-side IPC implementation stub class. */
++	public static abstract class Stub extends android.os.Binder implements
++			com.android.server.audio.IMcuService {
++		private static final java.lang.String DESCRIPTOR = "android.zhonghong.IMcuService";
++		private static final String TAG = "IMcuService";
++
++		/** Construct the stub at attach it to the interface. */
++		public Stub() {
++			this.attachInterface(this, DESCRIPTOR);
++		}
++
++		/**
++		 * Cast an IBinder object into an android.zhonghong.IMcuService
++		 * interface, generating a proxy if needed.
++		 */
++		public static com.android.server.audio.IMcuService asInterface(
++				android.os.IBinder obj) {
++			if ((obj == null)) {
++				return null;
++			}
++			android.os.IInterface iin = obj.queryLocalInterface(DESCRIPTOR);
++			if (((iin != null) && (iin instanceof com.android.server.audio.IMcuService))) {
++				return ((com.android.server.audio.IMcuService) iin);
++			}
++			return new com.android.server.audio.IMcuService.Stub.Proxy(obj);
++		}
++
++		@Override
++		public android.os.IBinder asBinder() {
++			return this;
++		}
++
++		@Override
++		public boolean onTransact(int code, android.os.Parcel data,
++				android.os.Parcel reply, int flags)
++				throws android.os.RemoteException {
++			Log.i(TAG, "Java -onTransactcode: " + code);
++			switch (code) {
++			case INTERFACE_TRANSACTION: {
++				reply.writeString(DESCRIPTOR);
++				return true;
++			}
++			case TRANSACTION_GET_TEST: {
++				// done in c++ server
++				data.enforceInterface(DESCRIPTOR);
++				int _result = this.getTest();
++				reply.writeNoException();
++				reply.writeInt(_result);
++				return true;
++			}
++			case TRANSACTION_OBTAIN_INFO: {
++				// done in c++ server
++				data.enforceInterface(DESCRIPTOR);
++				int domain = data.readInt();
++				int cmd = data.readInt();
++				Parcel out = Parcel.obtain();
++				Parcel in = Parcel.obtain();
++				Log.i("TRANSACTION_OBTAIN_INFO","data size:"+data.dataAvail()+"|"+data.dataSize() );
++				if(data.dataAvail() > 0)
++				{
++					in.appendFrom(data, data.dataPosition(), data.dataSize()-data.dataPosition());
++					in.setDataPosition(0);
++				}
++				boolean _result = this.obtainInfo(domain, cmd,in, out);
++//				reply.writeNoException();
++				if(out != null && out.dataSize() > 0)
++				{
++					reply.appendFrom(out, 0, out.dataSize());
++				}
++				reply.writeInt(_result?1:0);
++				return true;
++			}
++			case TRANSACTION_SEND_INFO: {
++				// done in c++ server
++				data.enforceInterface(DESCRIPTOR);
++				int domain = data.readInt();
++				int cmd = data.readInt();
++				Parcel in = Parcel.obtain();
++				if(data.dataAvail() > 0)
++				{
++					in.appendFrom(data, data.dataPosition(), data.dataSize()-data.dataPosition());
++					in.setDataPosition(0);
++				}
++				boolean _result = this.sendInfo(domain, cmd, in);
++//				reply.writeNoException();
++				reply.writeInt(_result?1:0);
++				return true;
++			}
++
++			}
++			return super.onTransact(code, data, reply, flags);
++		}
++
++		private static class Proxy implements com.android.server.audio.IMcuService {
++			private android.os.IBinder mRemote;
++
++			Proxy(android.os.IBinder remote) {
++				mRemote = remote;
++			}
++
++			@Override
++			public android.os.IBinder asBinder() {
++				return mRemote;
++			}
++
++			public java.lang.String getInterfaceDescriptor() {
++				return DESCRIPTOR;
++			}
++
++			@Override
++			public int getTest() throws android.os.RemoteException {
++				android.os.Parcel _data = android.os.Parcel.obtain();
++				android.os.Parcel _reply = android.os.Parcel.obtain();
++				int _result;
++				try {
++					_data.writeInterfaceToken(DESCRIPTOR);
++					mRemote.transact(Stub.TRANSACTION_GET_TEST, _data, _reply, 0);
++//					_reply.readException();
++					_result = _reply.readInt();
++				} finally {
++					_reply.recycle();
++					_data.recycle();
++				}
++				return _result;
++			}
++
++			@Override
++			public boolean obtainInfo(int domain, int cmd,Parcel in, Parcel out)
++					throws RemoteException {
++				android.os.Parcel _data = android.os.Parcel.obtain();
++				android.os.Parcel _reply = android.os.Parcel.obtain();
++				boolean _result;
++				try {
++					_data.writeInterfaceToken(DESCRIPTOR);
++					_data.writeInt(domain);
++					_data.writeInt(cmd);
++					if (in != null && in.dataSize() > 0) {
++						_data.appendFrom(in, 0, in.dataSize());;
++					}
++					mRemote.transact(Stub.TRANSACTION_OBTAIN_INFO, _data, _reply, 0);
++//					_reply.readException();
++					//4 bytes result flag at last, 
++					if (_reply != null && _reply.dataSize() > 4) {
++						out.appendFrom(_reply, 0, _reply.dataSize()-4);
++						out.setDataPosition(0);
++					}
++					_reply.setDataPosition(_reply.dataSize()-4);
++					_result = (_reply.readInt() == 1);
++				} finally {
++					_reply.recycle();
++					_data.recycle();
++				}
++				return _result;
++			}
++
++			@Override
++			public boolean sendInfo(int domain, int cmd, Parcel in)
++					throws RemoteException {
++				android.os.Parcel _data = android.os.Parcel.obtain();
++				android.os.Parcel _reply = android.os.Parcel.obtain();
++				boolean _result;
++				try {
++					_data.writeInterfaceToken(DESCRIPTOR);
++					_data.writeInt(domain);
++					_data.writeInt(cmd);
++					if (in != null && in.dataSize() > 0) {
++						_data.appendFrom(in, 0, in.dataSize());;
++					}
++					mRemote.transact(Stub.TRANSACTION_SEND_INFO, _data, _reply, 0);
++//					_reply.readException();
++					_result = (_reply.readInt() == 1);
++				} finally {
++					_reply.recycle();
++					_data.recycle();
++				}
++				return _result;
++			}
++
++			
++		}
++
++		static final int TRANSACTION_GET_TEST = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
++		static final int TRANSACTION_OBTAIN_INFO = (android.os.IBinder.FIRST_CALL_TRANSACTION + 2);
++		static final int TRANSACTION_SEND_INFO = (android.os.IBinder.FIRST_CALL_TRANSACTION + 3);
++		static final int TRANSACTION_REGIST_DATA_CHANGED_LISTENER = (android.os.IBinder.FIRST_CALL_TRANSACTION + 4);
++	}
++
++	public int getTest() throws android.os.RemoteException;
++	public boolean obtainInfo(int domain, int cmd,Parcel in, Parcel out) throws android.os.RemoteException;
++	public boolean sendInfo(int domain, int cmd, Parcel in) throws android.os.RemoteException;	
++}
+diff --git services/core/java/com/android/server/audio/ZHAudioService.java services/core/java/com/android/server/audio/ZHAudioService.java
+new file mode 100644
+index 0000000..93f0e5d
+--- /dev/null
++++ services/core/java/com/android/server/audio/ZHAudioService.java
+@@ -0,0 +1,558 @@
++
++package com.android.server.audio;
++
++import android.content.BroadcastReceiver;
++import android.content.Context;
++import android.content.Intent;
++import android.content.IntentFilter;
++import android.media.AudioManager;
++import android.media.AudioSystem;
++import android.os.Binder;
++import android.os.SystemProperties;
++import android.os.UserHandle;
++import android.os.ServiceManager;
++import android.os.Parcel;
++import android.util.Log;
++import android.text.TextUtils;
++import java.io.BufferedReader;
++import java.io.FileInputStream;
++import java.io.FileNotFoundException;
++import java.io.InputStreamReader;
++import java.util.ArrayList;
++import java.util.List;
++import org.json.JSONObject;
++import org.json.JSONException;
++import android.os.IBinder.DeathRecipient;
++import android.os.RemoteException;
++import android.provider.Settings;
++
++import java.util.Timer;
++import java.util.TimerTask;
++
++public class ZHAudioService {
++
++    public static String TAG = "ZHAudioService";
++
++    private Context mContext = null;
++    private boolean bMute = false;
++
++    /** add mainboard asp volume */
++    private int mcuvolume = 0;
++    private int btvolume = 0;
++    private int musicStreamIndex = 37;
++    private int FLAG_SYNC_VOLUME = 1 << 18; // sync mainboard volume
++    private int FLAG_ADJUST_BYPASS = 1 << 17; // adjust volume to audiocodec
++    private int FLAG_ADJUST_MAXVALUE = 1 << 16; // set max volume
++
++    private IMcuService mMcuService = null;
++
++    private final static int IS_JSON_CHAR_TYPE = 1;
++
++    private final static int SETTINGS_DOMAIN = 2;
++    private final static int KEY_SOUND_DOMAIN = 3;
++    private final static String ARM_DATA_VOL_KEYSTRING = "SYS_VOL";
++    private final static String ARM_DATA_BTVOL_KEYSTRING = "SYS_BTVOL";
++    private final static String ARM_DATA_MUTE_KEYSTRING = "SYS_MUTE";
++    private final static String ARM_DATA_KEY_BEEP = "KEY_BEEP";
++    private final static String MCU_SERVICE = "zhonghong.mcu";
++    
++    private AudioManager mAudioManager;
++
++    public ZHAudioService(Context context) {
++
++        mContext = context;
++
++        getMcuService();
++
++        mcuvolume = getVolume(ARM_DATA_VOL_KEYSTRING);
++        btvolume = getVolume(ARM_DATA_BTVOL_KEYSTRING);
++        
++        mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
++        //releaseFocusVolumeForNavi();
++        
++        IntentFilter naviFilter = new IntentFilter();
++        naviFilter.addAction(ACTION_NAVI_STATE);
++        //mContext.registerReceiver(new NaviActionReciever() , naviFilter);
++    }
++
++    private IMcuService getMcuService() {
++        if (mMcuService == null) {
++            mMcuService = IMcuService.Stub.asInterface(ServiceManager.getService(MCU_SERVICE));
++            Log.i(TAG, "getMcuService mMcuService: " + mMcuService);
++
++            reBindMcuService();
++        }
++
++        return mMcuService;
++    }
++    
++    private final String ACTION_NAVI_STATE = "AUTONAVI_STANDARD_BROADCAST_SEND";
++    private final String NAVI_TTS_KEY_TYPE = "KEY_TYPE";
++    private final int NAVI_TTS_KEY_TYPE_VALUE = 10019;
++    private final String NAVI_TTS_STATE_KEY = "EXTRA_STATE";
++    private final int NAVI_TTS_STATE_STOP_NAVI_VALUE = 9;
++    private final int NAVI_TTS_STATE_START_TTS_VALUE = 13;
++    private final int NAVI_TTS_STATE_STOP_TTS_VALUE = 14;
++    private final int MAX_VOLUME_NAVI = 15;
++    private class NaviActionReciever extends BroadcastReceiver{
++
++        public void onReceive(Context context, Intent intent) {
++            if (intent != null) {
++                String action = intent.getAction();
++                if (TextUtils.equals(action, ACTION_NAVI_STATE)) {
++                    Log.i(TAG, "ACTION_NAVI_STATE:" + action);
++                    int type = intent.getIntExtra(NAVI_TTS_KEY_TYPE, -1);
++                    if (type == NAVI_TTS_KEY_TYPE_VALUE) {
++                        int state = intent.getIntExtra(NAVI_TTS_STATE_KEY, -1);
++                        switch (state) {
++                            case NAVI_TTS_STATE_STOP_NAVI_VALUE:
++                                Log.i(TAG, "NAVI_TTS_STATE_STOP_NAVI_VALUE");
++                                releaseFocusVolumeForNavi();
++                                break;
++                            case NAVI_TTS_STATE_START_TTS_VALUE:
++                                Log.i(TAG, "NAVI_TTS_STATE_START_TTS_VALUE");
++                                focusVolumeForNavi();
++                                break;
++                            case NAVI_TTS_STATE_STOP_TTS_VALUE:
++                                Log.i(TAG, "NAVI_TTS_STATE_STOP_TTS_VALUE");
++                                releaseFocusVolumeForNavi();
++                                break;
++
++                            default:
++                                break;
++                        }
++                    }
++                }
++            }
++        }
++    }
++    
++    private void focusVolumeForNavi() {
++        int volumeNavi = Settings.System.getInt(mContext.getContentResolver(), "navi_volume",MAX_VOLUME_NAVI);
++        int maxMusicIndex = AudioService.MAX_STREAM_VOLUME[3];
++        int focusIndex = 0;
++        if (volumeNavi == 0) {
++            focusIndex = 0;
++        } else if (volumeNavi == MAX_VOLUME_NAVI){
++            focusIndex = maxMusicIndex;
++        } else {
++            float percent = (float)volumeNavi/(float)maxMusicIndex;
++            focusIndex = (int) (maxMusicIndex * percent);
++        }
++        Log.i(TAG, "focusVolumeForNavi volumeNavi:" + volumeNavi + " focusIndex:"+ focusIndex);
++        mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, focusIndex, 0);
++    }
++
++    private void releaseFocusVolumeForNavi() {
++        Log.i(TAG, "releaseFocusVolumeForNavi");
++        mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
++    }
++
++    private void reBindMcuService() {
++        Log.i(TAG, "reBindMcuService!");        
++        DeathRecipient deathRecipient = new DeathRecipient() {
++            
++            @Override
++            public void binderDied() {
++                Log.i(TAG, "Mcuserver died!");
++                mMcuService = null;
++                
++                Timer time = new Timer();
++                time.schedule(new TimerTask() {
++                    
++                    @Override
++                    public void run() {
++                        getMcuService();
++                    }
++                }, 1500);
++            }
++        };
++        
++        try {
++            if (mMcuService != null) {
++                mMcuService.asBinder().linkToDeath(deathRecipient, 0);
++            }
++        } catch (RemoteException e) {
++            e.printStackTrace();
++        }
++    }
++
++    private int getVolume(String key)
++    {
++        int vol = 0;
++        String str = "";
++
++        Parcel out = Parcel.obtain();
++        Parcel in = Parcel.obtain();
++
++        JSONObject json = new JSONObject();
++        try {
++            json.put(key, 0);
++        } catch (JSONException e) {
++        }
++        byte[] data = json.toString().getBytes();
++        in.writeByteArray(data);
++
++        if (mMcuService != null) {
++            try {
++                mMcuService.obtainInfo(SETTINGS_DOMAIN, IS_JSON_CHAR_TYPE, in, out);
++            } catch (RemoteException e) {
++
++            }
++        }
++
++        if (out != null) {
++            int len = out.readInt();
++            int type = out.readInt();
++            if (len > 1 && len <= out.dataAvail()) {
++                byte info[] = new byte[len];
++                out.readByteArray(info);
++                str = new String(info, 0, len - 1);
++                Log.i(TAG, "getVolume str:" + str);
++            }
++        }
++        if (TextUtils.isEmpty(str)) {
++            vol = 0;
++        } else {
++            vol = Integer.valueOf(str);
++        }
++
++        return vol;
++    }
++
++    /**
++     * @param streamType
++     * @param callingPackage
++     * @return streamtype
++     */
++    public int RouteStreamType(int streamType, String callingPackage) {
++        int strtype = streamType;
++        boolean bNaviVoice = isNaviPackage(callingPackage);
++        if (bNaviVoice) {
++            strtype = AudioSystem.STREAM_ALARM;
++            Log.d(TAG, "this package:" + callingPackage
++                    + "is navi app!" + "force audioStrem to AudioSystem.STREAM_ALARM ");
++        } else {
++
++        }
++        return strtype;
++    }
++
++    /**
++     * user for broadcast volume for apps
++     * 
++     * @param streamType
++     * @param oldIndex
++     * @param index
++     * @param flags
++     */
++    private void BroadCastVolumeAdjust(int streamType, int oldIndex, int index, int flags)
++    {
++        if ((flags & AudioManager.FLAG_FIXED_VOLUME) == 0) {
++            Intent intent = new Intent(AudioManager.VOLUME_CHANGED_ACTION);
++            intent.putExtra(AudioManager.EXTRA_VOLUME_STREAM_TYPE, streamType);
++            intent.putExtra(AudioManager.EXTRA_VOLUME_STREAM_VALUE, index);
++            intent.putExtra(AudioManager.EXTRA_PREV_VOLUME_STREAM_VALUE, oldIndex);
++            intent.putExtra("flags", flags);
++            Log.d(TAG, "zhongp sendVolumeUpdate: StreamType = " + streamType + ", oldIndex = "
++                    + oldIndex + ", newIndex = " + index);
++
++            sendBroadcastToAll(intent);
++        }
++    }
++
++    /**
++     * @param streamType
++     * @param oldIndex
++     * @param index
++     * @param flags
++     */
++    public boolean setMainBoradVolume(int streamType, int index, int flags) {
++
++        /*
++         * if((streamType != AudioSystem.STREAM_MUSIC) && (streamType !=
++         * AudioSystem.STREAM_VOICE_CALL)){ return false; }
++         */
++        if (streamType == AudioSystem.STREAM_ALARM) {
++            return false;
++        }
++
++        if ((flags & FLAG_SYNC_VOLUME) == FLAG_SYNC_VOLUME) {
++            /** if sync volume to frmework only */
++            int oldIndex = 0;
++            if (streamType == AudioSystem.STREAM_MUSIC) {
++                oldIndex = mcuvolume;
++                mcuvolume = index;
++            } else if (streamType == AudioSystem.STREAM_VOICE_CALL) {
++                oldIndex = btvolume;
++                btvolume = index;
++            }
++            BroadCastVolumeAdjust(streamType, oldIndex, index, flags);
++            return true;
++        } else if (flags == FLAG_ADJUST_MAXVALUE) {
++            Log.d(TAG, "receive mcu max volume:" + index);
++            return true;
++        } else if (flags != FLAG_ADJUST_BYPASS) {
++            // adjust volume by other apps
++            int oldIndex = 0;
++            if (streamType == AudioSystem.STREAM_MUSIC) {
++                oldIndex = mcuvolume;
++                mcuvolume = index;
++            } else {
++                oldIndex = btvolume;
++                btvolume = index;
++            }
++            // send to zuiserver
++            updateVolumeToMainBoard(streamType, index, flags);
++            // send to all apps
++            BroadCastVolumeAdjust(streamType, oldIndex, index, flags);
++            
++            return true;
++        }
++
++        if (index == 0) {
++            Log.e(TAG, "setMainBoradVolume error vol to 0!!!!!");
++            return true;
++        }
++        return false;
++    }
++
++    int mPrevVolDirection = AudioManager.ADJUST_SAME;
++
++    public boolean adjustMainBoradVolume(int streamType, int dir, int flags) {
++        Log.i(TAG, "adjustMainBoradVolume:streamType=" + streamType + ",dir=" + dir + ",flags="
++                + flags + ",mcuvolume=" + mcuvolume);
++        /*
++         * if((streamType != AudioSystem.STREAM_MUSIC) && (streamType !=
++         * AudioSystem.STREAM_VOICE_CALL)){ return false; }
++         */
++        if (streamType == AudioSystem.STREAM_ALARM) {
++            return false;
++        }
++        if ((flags & FLAG_SYNC_VOLUME) == FLAG_SYNC_VOLUME) {
++            /** if sync volume to frmework only */
++            return true;
++        } else if ((flags == FLAG_ADJUST_MAXVALUE)) {
++            Log.d(TAG, "receive mcu max volume dir:" + dir);
++            return true;
++        } else if (flags != FLAG_ADJUST_BYPASS) {
++            // adjust volume by other apps
++            int oldIndex = mcuvolume;
++            if (dir == AudioManager.ADJUST_LOWER) {
++                if (streamType == AudioSystem.STREAM_VOICE_CALL) {
++                    oldIndex = btvolume;
++                    if (btvolume > 0) {
++                        btvolume--;
++                    } else {
++                        // return false;
++                    }
++                } else {
++                    if (mcuvolume > 0) {
++                        mcuvolume--;
++                    } else {
++                        // return false;
++                    }
++                }
++            } else if (dir == AudioManager.ADJUST_RAISE) {
++                if (streamType == AudioSystem.STREAM_VOICE_CALL) {
++                    oldIndex = btvolume;
++                    if (btvolume < AudioService.MAX_STREAM_VOLUME[AudioSystem.STREAM_VOICE_CALL]) {
++                        btvolume++;
++                    } else {
++                        // return false;
++                    }
++                }
++                else {
++                    if (mcuvolume < AudioService.MAX_STREAM_VOLUME[AudioSystem.STREAM_MUSIC]) {
++                        mcuvolume++;
++
++                    } else {
++                        // return false;
++                    }
++                }
++            }
++            if (streamType == AudioSystem.STREAM_VOICE_CALL) {
++                // send to zuiserver
++                updateVolumeToMainBoard(streamType, btvolume, flags);
++                // send to all apps
++                BroadCastVolumeAdjust(streamType, oldIndex, btvolume, flags);
++            } else {
++                // send to zuiserver
++                updateVolumeToMainBoard(streamType, mcuvolume, flags);
++                // send to all apps
++                BroadCastVolumeAdjust(streamType, oldIndex, mcuvolume, flags);
++            }
++            return true;
++        }
++        return false;
++    }
++
++    /**
++     * get stream volume
++     * 
++     * @param streamType
++     * @return -1 return Android nomal
++     */
++    public int getStreamVolume(int streamType) {
++        if (streamType == AudioManager.STREAM_VOICE_CALL) {
++            return btvolume;
++        }
++        if (streamType == AudioManager.STREAM_ALARM) {
++            return -1;
++        }
++        return mcuvolume;
++    }
++
++    public boolean setMasterMute(boolean state, int flags) {
++        if (bMute != state) {
++            bMute = state;
++            updateMuteToMainBoard(state, flags);
++        }
++        return true;
++    }
++
++    public boolean isMasterMute() {
++        return bMute;
++    }
++
++    private void updateMuteToMainBoard(boolean state, int flags) {
++        final boolean bMute = state;
++        final int mflag = flags;
++        boolean ret = false;
++
++        JSONObject json = new JSONObject();
++        try {
++            json.put(ARM_DATA_MUTE_KEYSTRING, state ? 1 : 0);
++        } catch (JSONException e) {
++        }
++
++        byte[] jsondata = json.toString().getBytes();
++
++        Parcel p = Parcel.obtain();
++        p.writeByteArray(jsondata);
++
++        if (mMcuService != null) {
++            try {
++                ret = mMcuService.sendInfo(SETTINGS_DOMAIN, IS_JSON_CHAR_TYPE, p);
++            } catch (RemoteException e) {
++
++            }
++        }
++
++        if (!ret)
++        {
++            Log.d(TAG, "updateMuteToMainBoard failed\n");
++        }
++    }
++
++    private void updateVolumeToMainBoard(int streamType, int index, int flags) {
++        final int mvol = index;
++        final int mflag = flags;
++        final int mstream = streamType;
++
++        Log.i(TAG, "updateVolumeToMainBoard:index=" + index + ",flags=" + flags + ",streamType = "
++                + streamType);
++
++        JSONObject json = new JSONObject();
++        try {
++            if (streamType == AudioSystem.STREAM_VOICE_CALL)
++            {
++                json.put(ARM_DATA_BTVOL_KEYSTRING, index);
++            }
++            else
++            {
++                json.put(ARM_DATA_VOL_KEYSTRING, index);
++
++            }
++        } catch (JSONException e) {
++
++        }
++
++        byte[] jsondata = json.toString().getBytes();
++
++        Parcel p = Parcel.obtain();
++        p.writeByteArray(jsondata);
++        if (mMcuService != null) {
++            try {
++                mMcuService.sendInfo(SETTINGS_DOMAIN, IS_JSON_CHAR_TYPE, p);
++            } catch (RemoteException e) {
++            }
++        }
++    }
++
++    private boolean isNaviPackage(String packageName) {
++        if (packageName == null)
++            return false;
++
++        String filePath = SystemProperties.get("ro.zuiconfig.navimap", "/ResidentFlash/map.txt");
++        Log.d(TAG, "get navi file path :" + filePath);
++
++        FileInputStream fis = null;
++        try {
++            fis = new FileInputStream(filePath);
++        } catch (FileNotFoundException e) {
++            // TODO Auto-generated catch block
++            e.printStackTrace();
++        }
++
++        if (fis == null) {
++            Log.e(TAG, "read navi file error,file path:" + filePath);
++            return false;
++        }
++        try {
++            BufferedReader br = new BufferedReader(new InputStreamReader(fis));
++
++            for (String line = br.readLine(); line != null; line = br.readLine()) {
++                if (line.length() > 2) {
++                    String mapString = line.substring(0, line.length());
++                    if (packageName.equals(mapString)) {
++                        br.close();
++                        return true;
++                    }
++                }
++            }
++            br.close();
++            fis.close();
++        } catch (Exception e) {
++            e.printStackTrace();
++        }
++        return false;
++    }
++
++    private void sendBroadcastToAll(Intent intent) {
++        final long ident = Binder.clearCallingIdentity();
++        try {
++            mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
++        } finally {
++            Binder.restoreCallingIdentity(ident);
++        }
++    }
++    
++    public void playSoundEffect() {
++        boolean ret = false;
++
++        JSONObject json = new JSONObject();
++        try {
++            json.put(ARM_DATA_KEY_BEEP, 0);
++        } catch (JSONException e) {
++        }
++
++        byte[] jsondata = json.toString().getBytes();
++
++        Parcel p = Parcel.obtain();
++        p.writeByteArray(jsondata);
++
++        if (mMcuService != null) {
++            try {
++                ret = mMcuService.sendInfo(KEY_SOUND_DOMAIN, IS_JSON_CHAR_TYPE, p);
++            } catch (RemoteException e) {
++
++            }
++        }
++
++        if (!ret)
++        {
++            Log.d(TAG, "playSoundEffect failed\n");
++        }
++    }
++}

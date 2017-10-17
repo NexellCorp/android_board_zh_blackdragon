@@ -1,0 +1,21 @@
+diff --git init/init.cpp init/init.cpp
+index cd2d2e6..b6b982c 100644
+--- init/init.cpp
++++ init/init.cpp
+@@ -515,10 +515,13 @@ static selinux_enforcing_status selinux_status_from_cmdline() {
+ 
+ static bool selinux_is_enforcing(void)
+ {
+-    if (ALLOW_PERMISSIVE_SELINUX) {
++//ZHong car relate add by lihw begin
++    /*if (ALLOW_PERMISSIVE_SELINUX) {
+         return selinux_status_from_cmdline() == SELINUX_ENFORCING;
+-    }
+-    return true;
++    }*/
++    selinux_status_from_cmdline();
++    return false;
++//ZHong car relate add by lihw begin
+ }
+ 
+ int selinux_reload_policy(void)

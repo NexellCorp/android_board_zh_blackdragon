@@ -1,0 +1,2 @@
+#============= recovery ==============
+allow recovery ffs_prop:property_service set;

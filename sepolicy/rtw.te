@@ -1,0 +1,10 @@
+type rtw, domain;
+type rtw_exec, exec_type, file_type;
+
+init_daemon_domain(rtw)
+
+allow rtw rootfs:lnk_file getattr;
+allow rtw proc_net:file { read open getattr };
+allow rtw property_socket:sock_file write;
+allow rtw init:unix_stream_socket connectto;
+allow rtw system_prop:property_service set;
