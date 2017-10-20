@@ -381,14 +381,6 @@ if [ "${BUILD_KERNEL}" == "true" ]; then
 			${OUT_DIR}/boot.img \
 			2048 \
 			"buildvariant=${BUILD_TAG}"
-	test -f ${OUT_DIR}/ramdisk-recovery.img && \
-		make_android_bootimg \
-			${KERNEL_IMG} \
-			${DTB_IMG} \
-			${OUT_DIR}/ramdisk-recovery.img \
-			${OUT_DIR}/recovery.img \
-			2048 \
-			"buildvariant=${BUILD_TAG}"
 fi
 
 post_process ${TARGET_SOC} \
