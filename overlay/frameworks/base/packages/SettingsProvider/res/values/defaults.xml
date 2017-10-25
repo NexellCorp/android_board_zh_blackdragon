@@ -19,4 +19,5 @@
 <resources>
     <integer name="def_screen_off_timeout">2000000000</integer>
     <bool name="def_lockscreen_disabled">true</bool>
+    <bool name="def_user_setup_complete">true</bool>
 </resources>
