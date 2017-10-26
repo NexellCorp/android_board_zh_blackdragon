@@ -314,14 +314,7 @@ if [ -f ${UBOOT_DIR}/u-boot.bin ]; then
 		${OUT_DIR}/ramdisk.img \
 		"boot:emmc")
 
-	UBOOT_RECOVERYCMD=$(make_uboot_bootcmd \
-		${DEVICE_DIR}/partmap.txt \
-		${UBOOT_LOAD_ADDR} \
-		2048 \
-		${KERNEL_IMG} \
-		${DTB_IMG} \
-		${OUT_DIR}/ramdisk-recovery.img \
-		"recovery:emmc")
+	UBOOT_RECOVERYCMD="ext4load mmc 0:6 0x49000000 recovery.dtb; ext4load mmc 0:6 0x40008000 recovery.kernel; ext4load mmc 0:6 0x48000000 ramdisk-recovery.img; bootz 40008000 0x48000000:27f000 0x49000000"
 
 	UBOOT_BOOTARGS="console=ttyAMA3,115200n8 loglevel=7 printk.time=1 androidboot.hardware=zh_blackdragon androidboot.console=ttyAMA3 androidboot.serialno=s5p4418_zh_blackdragon quiet"
 
@@ -395,6 +388,13 @@ post_process ${TARGET_SOC} \
 	${OUT_DIR} \
 	zh_blackdragon \
 	${DEVICE_DIR}/logo.bmp
+
+make_ext4_recovery_image \
+	${KERNEL_DIR}/arch/arm/boot/zImage \
+	${KERNEL_DIR}/arch/arm/boot/dts/s5p4418-zh_blackdragon-rev00.dtb \
+	${OUT_DIR}/ramdisk-recovery.img \
+	67108864 \
+	${RESULT_DIR}
 
 ADDRESS=0x93c00000
 if [ "${MEMSIZE}" == "2GB" ]; then
