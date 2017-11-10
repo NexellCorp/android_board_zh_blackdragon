@@ -18,8 +18,12 @@ index c70a87c..3015eda 100644
  import android.app.NotificationManager;
  import android.bluetooth.BluetoothA2dp;
  import android.bluetooth.BluetoothAdapter;
-@@ -154,7 +155,7 @@ public class AudioService extends IAudioService.Stub {
-     protected static final boolean DEBUG_VOL = Log.isLoggable(TAG + ".VOL", Log.DEBUG);
+@@ -151,10 +152,10 @@ public class AudioService extends IAudioService.Stub {
+     protected static final boolean DEBUG_AP = Log.isLoggable(TAG + ".AP", Log.DEBUG);
+ 
+     /** Debug volumes */
+-    protected static final boolean DEBUG_VOL = Log.isLoggable(TAG + ".VOL", Log.DEBUG);
++    protected static final boolean DEBUG_VOL = true;//Log.isLoggable(TAG + ".VOL", Log.DEBUG);
  
      /** debug calls to devices APIs */
 -    protected static final boolean DEBUG_DEVICES = Log.isLoggable(TAG + ".DEVICES", Log.DEBUG);
@@ -45,16 +49,16 @@ index c70a87c..3015eda 100644
 +	//ZHong car relate add by lihw begin
 +    public static int[] MAX_STREAM_VOLUME = new int[] {
 +	//ZHong car relate add by lihw end
-+        32,  // STREAM_VOICE_CALL
-+        32,  // STREAM_SYSTEM
-+        32,  // STREAM_RING
-+        32, // STREAM_MUSIC
-+        32,  // STREAM_ALARM
-+        32,  // STREAM_NOTIFICATION
-+        32, // STREAM_BLUETOOTH_SCO
-+        32,  // STREAM_SYSTEM_ENFORCED
-+        32, // STREAM_DTMF
-+        32, // STREAM_TTS
++        39,  // STREAM_VOICE_CALL
++        39,  // STREAM_SYSTEM
++        39,  // STREAM_RING
++        39, // STREAM_MUSIC
++        39,  // STREAM_ALARM
++        39,  // STREAM_NOTIFICATION
++        39, // STREAM_BLUETOOTH_SCO
++        39,  // STREAM_SYSTEM_ENFORCED
++        39, // STREAM_DTMF
++        39 // STREAM_TTS
      };
  
      /** Minimum volume index values for audio streams */
@@ -67,41 +71,11 @@ index c70a87c..3015eda 100644
          0,  // STREAM_SYSTEM_ENFORCED
          0,  // STREAM_DTMF
 -        0   // STREAM_TTS
-+        0,  // STREAM_TTS
++        0  // STREAM_TTS
      };
  
      /* mStreamVolumeAlias[] indicates for each stream if it uses the volume settings
-@@ -558,6 +561,10 @@ public class AudioService extends IAudioService.Stub {
-     private AudioManagerInternal.RingerModeDelegate mRingerModeDelegate;
-     private VolumePolicy mVolumePolicy = VolumePolicy.DEFAULT;
-     private long mLoweredFromNormalToVibrateTime;
-+	
-+	//ZHong car relate add by lihw begin
-+	private ZHAudioService mZhAudioService = null;
-+	//ZHong car relate add by lihw end
- 
-     // Intent "extra" data keys.
-     public static final String CONNECT_INTENT_KEY_PORT_NAME = "portName";
-@@ -605,7 +612,7 @@ public class AudioService extends IAudioService.Stub {
-         mAppOps = (AppOpsManager)context.getSystemService(Context.APP_OPS_SERVICE);
- 
-         mPlatformType = AudioSystem.getPlatformType(context);
--
-+		
-         mUserManagerInternal = LocalServices.getService(UserManagerInternal.class);
- 
-         PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
-@@ -717,6 +724,9 @@ public class AudioService extends IAudioService.Stub {
-     }
- 
-     public void onSystemReady() {
-+        //ZHong car relate add by lihw begin
-+		mZhAudioService = new ZHAudioService(mContext);
-+		//ZHong car relate add by lihw end
-         mSystemReady = true;
-         sendMsg(mAudioHandler, MSG_LOAD_SOUND_EFFECTS, SENDMSG_QUEUE,
-                 0, 0, null, 0);
-@@ -1212,11 +1222,20 @@ public class AudioService extends IAudioService.Stub {
+@@ -1212,17 +1215,17 @@ public class AudioService extends IAudioService.Stub {
          if (mUseFixedVolume) {
              return;
          }
@@ -112,147 +86,167 @@ index c70a87c..3015eda 100644
  
          ensureValidDirection(direction);
          ensureValidStreamType(streamType);
-+		//ZHong car relate add by lihw begin
-+        if (isAllowChangedStreamVolume(callingPackage)) {
-+            if(mZhAudioService != null && mZhAudioService.adjustMainBoradVolume(streamType,direction,flags))
-+            {      
-+                Log.d(TAG, "adjustStreamVolume stream:"+streamType+"direction:"+direction+"flags:"+flags+"return....");     
-+                return ;    
-+            }
-+        }
-+		//ZHong car relate add by lihw end
  
          boolean isMuteAdjust = isMuteAdjust(direction);
  
-@@ -1523,8 +1542,26 @@ public class AudioService extends IAudioService.Stub {
-         if (mUseFixedVolume) {
+-        if (isMuteAdjust && !isStreamAffectedByMute(streamType)) {
++        /*if (isMuteAdjust && !isStreamAffectedByMute(streamType)) {
              return;
+-        }
++        }*/
+ 
+         // use stream type alias here so that streams with same alias have the same behavior,
+         // including with regard to silent mode control (e.g the use of STREAM_RING below and in
+@@ -1249,10 +1252,10 @@ public class AudioService extends IAudioService.Stub {
+         if (uid == android.os.Process.SYSTEM_UID) {
+             uid = UserHandle.getUid(getCurrentUserId(), UserHandle.getAppId(uid));
          }
--
-+        
-+        Log.d(TAG," setStreamVolume pkg:" + callingPackage + " streamtype:" + streamType + " index:"+ index + " flag:" + flags);
-         ensureValidStreamType(streamType);
-+
-+		//ZHong car relate add by lihw begin 
-+        if (isAllowChangedStreamVolume(callingPackage)) {
-+          //add for adjust muc volume     
-+            if(mZhAudioService != null && mZhAudioService.setMainBoradVolume(streamType,index,flags))
-+            {
-+                final int device = getDeviceForStream(streamType);
-+                int streamTypeAlias = mStreamVolumeAlias[streamType];
-+                
-+                index = rescaleIndex(32 * 10, streamType, streamTypeAlias);                
-+                setStreamVolumeInt(streamType, index, device, false, caller);           
-+                Log.d(TAG, "adjust stream:"+streamType+"index:"+index+"flags:"+flags+"return....");     
-+                
-+                return ;    
-+            }
-+        }
-+		//ZHong car relate add by lihw end
-         int streamTypeAlias = mStreamVolumeAlias[streamType];
+-        if (mAppOps.noteOp(STREAM_VOLUME_OPS[streamTypeAlias], uid, callingPackage)
++        /*if (mAppOps.noteOp(STREAM_VOLUME_OPS[streamTypeAlias], uid, callingPackage)
+                 != AppOpsManager.MODE_ALLOWED) {
+             return;
+-        }
++        }*/
+ 
+         // reset any pending volume command
+         synchronized (mSafeMediaVolumeState) {
+@@ -1501,7 +1504,8 @@ public class AudioService extends IAudioService.Stub {
+     private void onSetStreamVolume(int streamType, int index, int flags, int device,
+             String caller) {
+         final int stream = mStreamVolumeAlias[streamType];
+-        setStreamVolumeInt(stream, index, device, false, caller);
++        //ZHong car relate add by lihw for show volume UI controller begin
++        setStreamVolumeInt(stream, index, device, flags, false, caller);
+         // setting volume on ui sounds stream type also controls silent mode
+         if (((flags & AudioManager.FLAG_ALLOW_RINGER_MODES) != 0) ||
+                 (stream == getUiSoundsStreamType())) {
+@@ -1529,23 +1533,24 @@ public class AudioService extends IAudioService.Stub {
          VolumeStreamState streamState = mStreamStates[streamTypeAlias];
  
-@@ -1619,6 +1656,44 @@ public class AudioService extends IAudioService.Stub {
-         }
-         return true;
-     }
-+	
-+	//ZHong car relate add by lihw begin 
-+	    private boolean isAllowChangedStreamVolume(String pkg) {
-+        ArrayList<String> appsList = new ArrayList<String>();
-+        /*String[] apps = mContext.getResources().getStringArray(R.array.allow_set_volume_apps);
-+        for (String app : apps) {
-+            appsList.add(app);
-+        }*/
-+		appsList.add("com.android.settings");
-+        
-+        String persistApp = SystemProperties.get("persist.set.volume.list");
-+        if (persistApp.length() > 0) {
-+            TextUtils.StringSplitter splitter = new TextUtils.SimpleStringSplitter(',');
-+            splitter.setString(persistApp);
-+            for (String s : splitter) {
-+                appsList.add(s);
-+            }
-+            
-+        }
-+        return appsList.contains(pkg);
-+    }
-+    
-+    private String getPkgByPid(int pid) {
-+        ActivityManager am = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
-+        try {
-+            List<RunningAppProcessInfo> processes = am.getRunningAppProcesses();
-+            PackageManager pm = mContext.getPackageManager();
-+            for (RunningAppProcessInfo process : processes) {
-+                if (process.pid == pid) {
-+                    return process.processName;
-+                }
-+            }
-+        } catch (Exception e){
-+            e.printStackTrace();
-+        }
-+        return "";
-+    }
-+	//ZHong car relate add by lihw end
+         final int device = getDeviceForStream(streamType);
++        Log.d(TAG, "setStreamVolume device:" + device + " streamTypeAlias:" +streamTypeAlias);
+         int oldIndex;
  
-     /** @see AudioManager#forceVolumeControlStream(int) */
-     public void forceVolumeControlStream(int streamType, IBinder cb) {
-@@ -1916,6 +1991,41 @@ public class AudioService extends IAudioService.Stub {
-                 != PackageManager.PERMISSION_GRANTED) {
+         // skip a2dp absolute volume control request when the device
+         // is not an a2dp device
+-        if ((device & AudioSystem.DEVICE_OUT_ALL_A2DP) == 0 &&
++        /*if ((device & AudioSystem.DEVICE_OUT_ALL_A2DP) == 0 &&
+             (flags & AudioManager.FLAG_BLUETOOTH_ABS_VOLUME) != 0) {
              return;
+-        }
++        }*/
+         // If we are being called by the system (e.g. hardware keys) check for current user
+         // so we handle user restrictions correctly.
+         if (uid == android.os.Process.SYSTEM_UID) {
+             uid = UserHandle.getUid(getCurrentUserId(), UserHandle.getAppId(uid));
          }
-+		
-+		//ZHong car relate add by lihw begin
-+        if (getCurrentUserId() == userId) {
-+            if (mute != AudioSystem.getMasterMute()) {
-+                //add by zhonggp for zhaudioserver start 20160115 @{			 
-+                if(mZhAudioService != null){
-+                    mZhAudioService.setMasterMute(mute, flags);
-+                    int streamTypes = AudioSystem.getNumStreamTypes();
-+                    if (mute) {
-+                        for (int i = 0; i < streamTypes; i ++) {
-+                            if (i == AudioSystem.STREAM_ALARM
-+                                    || i == AudioSystem.STREAM_BLUETOOTH_SCO
-+                                    || i == AudioSystem.STREAM_VOICE_CALL) {
-+                                continue;
-+                            }
-+                            setStreamVolume(i, 0, 0, mContext.getPackageName());
-+                        }
-+                        
-+                    } else {
-+                        for (int i = 0; i < streamTypes; i ++) {
-+                            if (i == AudioSystem.STREAM_ALARM
-+                                    || i == AudioSystem.STREAM_BLUETOOTH_SCO
-+                                    || i == AudioSystem.STREAM_VOICE_CALL) {
-+                                continue;
-+                            }
-+                            setStreamVolume(i, AudioSystem.DEFAULT_STREAM_VOLUME[i], 0, mContext.getPackageName());
-+                        }
-+                    }
-+                }else{              
-+                    if (DEBUG_VOL) Log.d(TAG, "set master mute zhAudioServer is nlll");             
-+                }
-+			}
-+		}
-+		//ZHong car relate add by lihw end
-+				
-         setMasterMuteInternalNoCallerCheck(mute, flags, userId);
+-        if (mAppOps.noteOp(STREAM_VOLUME_OPS[streamTypeAlias], uid, callingPackage)
++        /*if (mAppOps.noteOp(STREAM_VOLUME_OPS[streamTypeAlias], uid, callingPackage)
+                 != AppOpsManager.MODE_ALLOWED) {
+             return;
+-        }
++        }*/
+ 
+         if (isAndroidNPlus(callingPackage)
+                 && wouldToggleZenMode(getNewRingerMode(streamTypeAlias, index, flags))
+@@ -1575,14 +1580,14 @@ public class AudioService extends IAudioService.Stub {
+                 }
+             }
+ 
+-            if (streamTypeAlias == AudioSystem.STREAM_MUSIC) {
++            /*if (streamTypeAlias == AudioSystem.STREAM_MUSIC) {
+                 setSystemAudioVolume(oldIndex, index, getStreamMaxVolume(streamType), flags);
+-            }
++            }*/
+ 
+-            flags &= ~AudioManager.FLAG_FIXED_VOLUME;
++            //flags &= ~AudioManager.FLAG_FIXED_VOLUME;
+             if ((streamTypeAlias == AudioSystem.STREAM_MUSIC) &&
+                     ((device & mFixedVolumeDevices) != 0)) {
+-                flags |= AudioManager.FLAG_FIXED_VOLUME;
++                //flags |= AudioManager.FLAG_FIXED_VOLUME;
+ 
+                 // volume is either 0 or max allowed for fixed volume devices
+                 if (index != 0) {
+@@ -1595,14 +1600,14 @@ public class AudioService extends IAudioService.Stub {
+                 }
+             }
+ 
+-            if (!checkSafeMediaVolume(streamTypeAlias, index, device)) {
++            /*if (!checkSafeMediaVolume(streamTypeAlias, index, device)) {
+                 mVolumeController.postDisplaySafeVolumeWarning(flags);
+                 mPendingVolumeCommand = new StreamVolumeCommand(
+                                                     streamType, index, flags, device);
+-            } else {
++            } else {*/
+                 onSetStreamVolume(streamType, index, flags, device, caller);
+                 index = mStreamStates[streamType].getIndex(device);
+-            }
++            //}
+         }
+         sendVolumeUpdate(streamType, oldIndex, index, flags);
+     }
+@@ -1712,7 +1717,9 @@ public class AudioService extends IAudioService.Stub {
+         if (streamType == AudioSystem.STREAM_MUSIC) {
+             flags = updateFlagsForSystemAudio(flags);
+         }
+-        mVolumeController.postVolumeChanged(streamType, flags);
++        //ZHong car relate add by lihw for not show volume ui of System begin
++        //mVolumeController.postVolumeChanged(streamType, flags);
++        //ZHong car relate add by lihw begin
      }
  
-@@ -1941,17 +2051,40 @@ public class AudioService extends IAudioService.Stub {
+     // If Hdmi-CEC system audio mode is on, we show volume bar only when TV
+@@ -1753,16 +1760,26 @@ public class AudioService extends IAudioService.Stub {
+      * @param force If true, set the volume even if the desired volume is same
+      * as the current volume.
+      */
++    //ZHong car relate add by lihw for show volume UI begin
++    private void setStreamVolumeInt(int streamType,
++                                    int index,
++                                    int device,
++                                    boolean force,
++                                    String caller) {
++        setStreamVolumeInt(streamType, index, device, 0, force, caller);
++    }
+     private void setStreamVolumeInt(int streamType,
+                                     int index,
+                                     int device,
++                                    int flags,
+                                     boolean force,
+                                     String caller) {
+         VolumeStreamState streamState = mStreamStates[streamType];
+-
+-        if (streamState.setIndex(index, device, caller) || force) {
++        Log.d(TAG,"setStreamVolumeInt index:" + index + " device:" + device + " flags:" +flags+ " force:" + force);
++        if (streamState.setIndex(index, device, flags, caller) || force) {
+             // Post message to set system volume (it in turn will post a message
+             // to persist).
++        //ZHong car relate add by lihw for show Volume UI end
+             sendMsg(mAudioHandler,
+                     MSG_SET_DEVICE_VOLUME,
+                     SENDMSG_QUEUE,
+@@ -1926,6 +1943,7 @@ public class AudioService extends IAudioService.Stub {
+         if (mUseFixedVolume) {
+             return; // If using fixed volume, we don't mute.
+         }
++        Log.d(TAG, String.format("Master mute %s, master, user=%d", mute, flags, userId));
+         if (getCurrentUserId() == userId) {
+             if (mute != AudioSystem.getMasterMute()) {
+                 setSystemAudioMute(mute);
+@@ -1934,8 +1952,11 @@ public class AudioService extends IAudioService.Stub {
  
-     /** get master mute state. */
-     public boolean isMasterMute() {
-+       //ZHong car relate add by lihw begin		
-+       if(mZhAudioService != null){			
-+            return mZhAudioService.isMasterMute();      
-+       }else{          
-+            if (DEBUG_VOL) Log.d(TAG, "isMasterMute zhAudioServer is nlll");        
-+       }   
-+		//ZHong car relate add by lihw end
-         return AudioSystem.getMasterMute();
+                 Intent intent = new Intent(AudioManager.MASTER_MUTE_CHANGED_ACTION);
+                 intent.putExtra(AudioManager.EXTRA_MASTER_VOLUME_MUTED, mute);
++                intent.putExtra("flags", flags & AudioManager.FLAG_SHOW_UI);
++				Log.d(TAG, String.format("should send broadcast Master mute %s, %d, user=%d", mute, flags, userId));
+                 sendBroadcastToAll(intent);
+             }
++
+         }
      }
  
+@@ -1947,6 +1968,7 @@ public class AudioService extends IAudioService.Stub {
      public void setMasterMute(boolean mute, int flags, String callingPackage, int userId) {
          setMasterMuteInternal(mute, flags, callingPackage, Binder.getCallingUid(),
                  userId);
@@ -260,27 +254,15 @@ index c70a87c..3015eda 100644
      }
  
      /** @see AudioManager#getStreamVolume(int) */
-     public int getStreamVolume(int streamType) {
-         ensureValidStreamType(streamType);
-+        //ZHong car relate add by lihw begin
-+        if (mZhAudioService != null) {
-+            int ret = mZhAudioService.getStreamVolume(streamType);
-+            if(ret >= 0)
-+            {
-+                return ret;
-+            }
-+        }
-+         
-+        if(streamType == -1) 
-+            streamType = AudioManager.STREAM_MUSIC;    
-+        //ZHong car relate add by lihw end   
-+
-+
-+            
-         int device = getDeviceForStream(streamType);
-         synchronized (VolumeStreamState.class) {
-             int index = mStreamStates[streamType].getIndex(device);
-@@ -2518,9 +2651,15 @@ public class AudioService extends IAudioService.Stub {
+@@ -1964,6 +1986,7 @@ public class AudioService extends IAudioService.Stub {
+                     (device & mFixedVolumeDevices) != 0) {
+                 index = mStreamStates[streamType].getMaxIndex();
+             }
++            Log.d(TAG, "getStreamVolume streamtype:" + streamType + " device:" + device + " voluem:" + ((index+5 )/10));
+             return (index + 5) / 10;
+         }
+     }
+@@ -2518,9 +2541,15 @@ public class AudioService extends IAudioService.Stub {
              Log.w(TAG, "AudioService effectType value " + effectType + " out of range");
              return;
          }
@@ -290,15 +272,77 @@ index c70a87c..3015eda 100644
 +        //ZHong car relate add by lihw begin
 +        /*sendMsg(mAudioHandler, MSG_PLAY_SOUND_EFFECT, SENDMSG_QUEUE,
 +                effectType, (int) (volume * 1000), null, 0);*/
-+        if (mZhAudioService != null) {
++        /*if (mZhAudioService != null) {
 +            mZhAudioService.playSoundEffect();
 +        } else {
 +            android.util.Log.i(TAG, "playSoundEffectVolume,mZhAudioService is null");
-+        }
++        }*/
 +        //ZHong car relate add by lihw end
      }
  
      /**
+@@ -4021,9 +4050,16 @@ public class AudioService extends IAudioService.Stub {
+             return setIndex(getIndex(device) + deltaIndex, device, caller);
+         }
+ 
++        //Zhong car relate add by lihw begin
+         public boolean setIndex(int index, int device, String caller) {
++            return setIndex(index, device, 0, caller);
++        }
++
++        public boolean setIndex(int index, int device, int flags, String caller) {
++        //ZHong car relate add by lihw end
+             boolean changed = false;
+             int oldIndex;
++
+             synchronized (VolumeStreamState.class) {
+                 oldIndex = getIndex(device);
+                 index = getValidIndex(index);
+@@ -4035,6 +4071,7 @@ public class AudioService extends IAudioService.Stub {
+                 mIndexMap.put(device, index);
+ 
+                 changed = oldIndex != index;
++                Log.d(TAG, "setIndex index:" + index + " oldIndex:" + oldIndex + " changed:" + changed + " device:" +device);
+                 // Apply change to all streams using this one as alias if:
+                 // - the index actually changed OR
+                 // - there is no volume index stored for this device on alias stream.
+@@ -4056,6 +4093,7 @@ public class AudioService extends IAudioService.Stub {
+                     }
+                 }
+             }
++
+             if (changed) {
+                 oldIndex = (oldIndex + 5) / 10;
+                 index = (index + 5) / 10;
+@@ -4072,7 +4110,15 @@ public class AudioService extends IAudioService.Stub {
+                 mVolumeChanged.putExtra(AudioManager.EXTRA_PREV_VOLUME_STREAM_VALUE, oldIndex);
+                 mVolumeChanged.putExtra(AudioManager.EXTRA_VOLUME_STREAM_TYPE_ALIAS,
+                         mStreamVolumeAlias[mStreamType]);
++                //zhong car relate add by lihw begin
++                Log.e(TAG, "send volume_changed_action broadcast, mStreamVolumeAlias[mStreamType]:" + mStreamVolumeAlias[mStreamType]
++                    +" flags:" +flags + " index:" +index + " caller:" + caller);
++                if(flags == 100 || flags == AudioManager.FLAG_SHOW_UI){
++                    mVolumeChanged.putExtra("flags",AudioManager.FLAG_SHOW_UI);
++                }
++                //zhong car relate add by lihw end
+                 sendBroadcastToAll(mVolumeChanged);
++
+             }
+             return changed;
+         }
+@@ -4134,6 +4180,7 @@ public class AudioService extends IAudioService.Stub {
+ 
+         public void mute(boolean state) {
+             boolean changed = false;
++            Log.d(TAG,"mute streamType:"+mStreamType + " mute:"+state);
+             synchronized (VolumeStreamState.class) {
+                 if (state != mIsMuted) {
+                     changed = true;
+@@ -6462,3 +6509,4 @@ public class AudioService extends IAudioService.Stub {
+         }
+     }
+ }
++
 diff --git services/core/java/com/android/server/audio/IMcuService.java services/core/java/com/android/server/audio/IMcuService.java
 new file mode 100644
 index 0000000..926ec97
@@ -453,7 +497,7 @@ index 0000000..926ec97
 +					}
 +					mRemote.transact(Stub.TRANSACTION_OBTAIN_INFO, _data, _reply, 0);
 +//					_reply.readException();
-+					//4 bytes result flag at last, 
++					//4 bytes result flag at last,
 +					if (_reply != null && _reply.dataSize() > 4) {
 +						out.appendFrom(_reply, 0, _reply.dataSize()-4);
 +						out.setDataPosition(0);
@@ -490,7 +534,7 @@ index 0000000..926ec97
 +				return _result;
 +			}
 +
-+			
++
 +		}
 +
 +		static final int TRANSACTION_GET_TEST = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
@@ -501,7 +545,7 @@ index 0000000..926ec97
 +
 +	public int getTest() throws android.os.RemoteException;
 +	public boolean obtainInfo(int domain, int cmd,Parcel in, Parcel out) throws android.os.RemoteException;
-+	public boolean sendInfo(int domain, int cmd, Parcel in) throws android.os.RemoteException;	
++	public boolean sendInfo(int domain, int cmd, Parcel in) throws android.os.RemoteException;
 +}
 diff --git services/core/java/com/android/server/audio/ZHAudioService.java services/core/java/com/android/server/audio/ZHAudioService.java
 new file mode 100644
@@ -566,7 +610,7 @@ index 0000000..93f0e5d
 +    private final static String ARM_DATA_MUTE_KEYSTRING = "SYS_MUTE";
 +    private final static String ARM_DATA_KEY_BEEP = "KEY_BEEP";
 +    private final static String MCU_SERVICE = "zhonghong.mcu";
-+    
++
 +    private AudioManager mAudioManager;
 +
 +    public ZHAudioService(Context context) {
@@ -577,10 +621,10 @@ index 0000000..93f0e5d
 +
 +        mcuvolume = getVolume(ARM_DATA_VOL_KEYSTRING);
 +        btvolume = getVolume(ARM_DATA_BTVOL_KEYSTRING);
-+        
++
 +        mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
 +        //releaseFocusVolumeForNavi();
-+        
++
 +        IntentFilter naviFilter = new IntentFilter();
 +        naviFilter.addAction(ACTION_NAVI_STATE);
 +        //mContext.registerReceiver(new NaviActionReciever() , naviFilter);
@@ -596,7 +640,7 @@ index 0000000..93f0e5d
 +
 +        return mMcuService;
 +    }
-+    
++
 +    private final String ACTION_NAVI_STATE = "AUTONAVI_STANDARD_BROADCAST_SEND";
 +    private final String NAVI_TTS_KEY_TYPE = "KEY_TYPE";
 +    private final int NAVI_TTS_KEY_TYPE_VALUE = 10019;
@@ -637,7 +681,7 @@ index 0000000..93f0e5d
 +            }
 +        }
 +    }
-+    
++
 +    private void focusVolumeForNavi() {
 +        int volumeNavi = Settings.System.getInt(mContext.getContentResolver(), "navi_volume",MAX_VOLUME_NAVI);
 +        int maxMusicIndex = AudioService.MAX_STREAM_VOLUME[3];
@@ -660,17 +704,17 @@ index 0000000..93f0e5d
 +    }
 +
 +    private void reBindMcuService() {
-+        Log.i(TAG, "reBindMcuService!");        
++        Log.i(TAG, "reBindMcuService!");
 +        DeathRecipient deathRecipient = new DeathRecipient() {
-+            
++
 +            @Override
 +            public void binderDied() {
 +                Log.i(TAG, "Mcuserver died!");
 +                mMcuService = null;
-+                
++
 +                Timer time = new Timer();
 +                time.schedule(new TimerTask() {
-+                    
++
 +                    @Override
 +                    public void run() {
 +                        getMcuService();
@@ -678,7 +722,7 @@ index 0000000..93f0e5d
 +                }, 1500);
 +            }
 +        };
-+        
++
 +        try {
 +            if (mMcuService != null) {
 +                mMcuService.asBinder().linkToDeath(deathRecipient, 0);
@@ -751,7 +795,7 @@ index 0000000..93f0e5d
 +
 +    /**
 +     * user for broadcast volume for apps
-+     * 
++     *
 +     * @param streamType
 +     * @param oldIndex
 +     * @param index
@@ -817,7 +861,7 @@ index 0000000..93f0e5d
 +            updateVolumeToMainBoard(streamType, index, flags);
 +            // send to all apps
 +            BroadCastVolumeAdjust(streamType, oldIndex, index, flags);
-+            
++
 +            return true;
 +        }
 +
@@ -900,7 +944,7 @@ index 0000000..93f0e5d
 +
 +    /**
 +     * get stream volume
-+     * 
++     *
 +     * @param streamType
 +     * @return -1 return Android nomal
 +     */
@@ -1038,7 +1082,7 @@ index 0000000..93f0e5d
 +            Binder.restoreCallingIdentity(ident);
 +        }
 +    }
-+    
++
 +    public void playSoundEffect() {
 +        boolean ret = false;
 +
