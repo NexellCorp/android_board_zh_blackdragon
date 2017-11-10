@@ -44,8 +44,8 @@ PRODUCT_COPY_FILES += \
 	device/nexell/zh_blackdragon/media_profiles.xml:system/etc/media_profiles.xml
 
 # ffmpeg libraries
-EN_FFMPEG_EXTRACTOR := false
-EN_FFMPEG_AUDIO_DEC := false
+EN_FFMPEG_EXTRACTOR := true
+EN_FFMPEG_AUDIO_DEC := true
 
 ifeq ($(EN_FFMPEG_EXTRACTOR),true)
 

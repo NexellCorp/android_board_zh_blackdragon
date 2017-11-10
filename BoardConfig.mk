@@ -85,8 +85,8 @@ WIFI_DRIVER_FW_PATH_PARAM := "/dev/null"
 BOARD_CHARGER_ENABLE_SUSPEND := false
 
 # ffmpeg libraries
-EN_FFMPEG_EXTRACTOR := false
-EN_FFMPEG_AUDIO_DEC := false
+EN_FFMPEG_EXTRACTOR := true
+EN_FFMPEG_AUDIO_DEC := true
 
 # sepolicy
 BOARD_SEPOLICY_DIRS += \
