@@ -14,6 +14,7 @@ allow gocsdk device:dir write;
 allow gocsdk device:dir remove_name;
 allow gocsdk rootfs:lnk_file getattr;
 allow gocsdk device:lnk_file create;
-allow gocsdk system_data_file:file { write open read getattr execute };
+allow gocsdk system_data_file:file { write open read getattr execute create setattr };
 allow gocsdk console_device:chr_file { read write open ioctl };
 allow gocsdk devpts:chr_file setattr;
+allow gocsdk system_data_file:dir { write add_name create };
