@@ -61,7 +61,6 @@ on late-fs
     start servicemanager
     start zygote
     start surfaceflinger
-    start audioserver
     start bootanim
     mount_all ./fstab.zh_blackdragon --late
 
