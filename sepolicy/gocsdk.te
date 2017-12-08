@@ -5,10 +5,15 @@ init_daemon_domain(gocsdk)
 allow gocsdk device:dir add_name;
 allow gocsdk self:file execmod;
 
-allow gocsdk gocsdk:capability dac_override;
+allow gocsdk gocsdk:capability { dac_override sys_nice };
 allow gocsdk shell_exec:file execute;
 
 allow gocsdk shell_exec:file execute_no_trans;
 allow gocsdk proc:file write;
 allow gocsdk device:dir write;
 allow gocsdk device:dir remove_name;
+allow gocsdk rootfs:lnk_file getattr;
+allow gocsdk device:lnk_file create;
+allow gocsdk system_data_file:file { write open read getattr execute };
+allow gocsdk console_device:chr_file { read write open ioctl };
+allow gocsdk devpts:chr_file setattr;

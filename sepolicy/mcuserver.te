@@ -13,7 +13,10 @@ binder_call(mcuserver, binderservicedomain)
 binder_service(mcuserver)
 
 allow mcuserver self:process execmem;
-allow mcuserver self:capability { dac_override };
+allow mcuserver self:capability { dac_override sys_time };
 
 allow mcuserver console_device:chr_file { read write open ioctl };
 allow mcuserver untrusted_app:binder { call };
+allow mcuserver rootfs:lnk_file getattr;
+allow mcuserver shell_exec:file { open read execute execute_no_trans getattr };
+allow mcuserver toolbox_exec:file { getattr execute open read execute_no_trans };

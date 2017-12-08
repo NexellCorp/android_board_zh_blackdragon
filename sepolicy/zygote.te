@@ -1,1 +1,2 @@
 allow zygote debugfs_tracing:file { write open getattr };
+allow zygote self:capability sys_nice;
