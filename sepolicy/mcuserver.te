@@ -20,3 +20,6 @@ allow mcuserver untrusted_app:binder { call };
 allow mcuserver rootfs:lnk_file getattr;
 allow mcuserver shell_exec:file { open read execute execute_no_trans getattr };
 allow mcuserver toolbox_exec:file { getattr execute open read execute_no_trans };
+allow mcuserver property_socket:sock_file write;
+allow mcuserver init:unix_stream_socket connectto;
+allow mcuserver system_prop:property_service set;
