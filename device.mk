@@ -252,3 +252,7 @@ PRODUCT_PACKAGES += \
 	mount.ntfs \
 	fsck.ntfs \
 	mkfs.ntfs
+
+# mcuserver debug attribute
+PRODUCT_PROPERTY_OVERRIDES += \
+	sys.mcuserver.debug=false
