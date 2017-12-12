@@ -45,4 +45,12 @@ PRODUCT_DEFAULT_PROPERTY_OVERRIDES += config.disable_consumerir=true
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += config.disable_rtt=true
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += config.disable_vrmanager=true
 
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += config.disable_noncore=true
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += config.disable_cameraservice=true
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += config.disable_mediaproj=true
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += config.disable_searchmanager=true
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += config.disable_trustmanager=true
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += config.disable_textservices=true
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += config.disable_systemui=true
+
 $(call inherit-product, device/nexell/zh_blackdragon/device.mk)
