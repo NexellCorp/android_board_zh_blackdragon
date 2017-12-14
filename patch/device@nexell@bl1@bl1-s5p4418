@@ -35,10 +35,20 @@ index 6a816fa..7363658 100644
  	U32 *src = (U32*)ptbi;
  	U32 *dst = (U32*)ptbh->tbbi.load_addr;
 diff --git src/main.c src/main.c
-index 99a5906..f0d5187 100644
+index 99a5906..e13de5c 100644
 --- src/main.c
 +++ src/main.c
-@@ -117,6 +117,7 @@ void __init main(void)
+@@ -91,7 +91,8 @@ void __init main(void)
+ #if defined(PMIC_ON)
+ 	pmic_initalize();
+ #endif
+-	DMC_Delay(0xFFFFF);
++	/* DMC_Delay(0xFFFFF); */
++	DMC_Delay(0x7507);
+ 
+ 	/* step 03. clock(pll) intialize */
+ 	clock_initialize();
+@@ -117,6 +118,7 @@ void __init main(void)
  	/* step 06. memory initialize */
  	memory_initialize(is_resume);
  
