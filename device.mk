@@ -256,3 +256,18 @@ PRODUCT_PACKAGES += \
 # mcuserver debug attribute
 PRODUCT_PROPERTY_OVERRIDES += \
 	sys.mcuserver.debug=false
+
+# GMS
+BUILD_GMS = yes
+ifeq ($(strip $(BUILD_GMS)),yes)
+PRODUCT_PACKAGES += \
+	GoogleLoginService \
+	GoogleServicesFramework \
+	GmsCore \
+	Phonesky \
+	com.google.android.maps.xml \
+	com.google.android.maps.jar \
+	Maps
+PRODUCT_COPY_FILES += \
+	$(LOCAL_PATH)/init_gms_perm.sh:system/bin/init_gms_perm.sh
+endif
