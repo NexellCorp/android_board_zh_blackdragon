@@ -99,6 +99,8 @@ on property:sys.boot_completed=1
 
     write /sys/class/thermal/thermal_zone0/mode enabled
 
+    exec -- /system/bin/init_gms_perm.sh
+
 service p2p_supplicant /system/bin/wpa_supplicant \
     -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf \
     -e/data/misc/wifi/entropy.bin -N \
