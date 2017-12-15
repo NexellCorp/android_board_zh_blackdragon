@@ -12,3 +12,4 @@
 /system/bin/rtw_fwloader u:object_r:rtw_exec:s0
 /system/bin/mcuserver	u:object_r:mcuserver_exec:s0
 /system/bin/gocsdk	u:object_r:gocsdk_exec:s0
+/system/bin/init_gms_perm\.sh u:object_r:installd_exec:s0
