@@ -95,11 +95,11 @@ on property:sys.boot_completed=1
     write /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor sched
     write /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor sched
 
+    exec -- /system/bin/init_gms_perm.sh
+
     class_start late_start
 
     write /sys/class/thermal/thermal_zone0/mode enabled
-
-    exec -- /system/bin/init_gms_perm.sh
 
 service p2p_supplicant /system/bin/wpa_supplicant \
     -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf \
