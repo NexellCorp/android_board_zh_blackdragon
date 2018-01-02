@@ -271,3 +271,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/init_gms_perm.sh:system/bin/init_gms_perm.sh
 endif
+
+# GPS
+PRODUCT_COPY_FILES += \
+	device/nexell/zh_blackdragon/zhong_lib/gps.default.so:system/lib/hw/gps.default.so \
+	device/nexell/zh_blackdragon/zhong_lib/u-blox.conf:system/etc/u-blox.conf
