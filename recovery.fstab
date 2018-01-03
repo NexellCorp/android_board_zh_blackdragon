@@ -4,11 +4,11 @@
 # specify MF_CHECK, and must come before any filesystems that do specify MF_CHECK
 /dev/block/mmcblk0p1 /boot         emmc     defaults                                           defaults
 /dev/block/mmcblk0p2 /system       ext4     rw                                                 wait
-#/dev/block/mmcblk0p3 /vendor       ext4     rw                                                 wait
-/dev/block/mmcblk0p5 /cache        ext4     noatime,nosuid,nodev,nomblk_io_submit,errors=panic wait,check
-/dev/block/mmcblk0p6 /recovery     emmc     defaults                                           defaults
-/dev/block/mmcblk0p7 /misc         emmc     defaults                                           defaults
-/dev/block/mmcblk0p8 /data         ext4     noatime,nosuid,nodev,nomblk_io_submit,errors=panic wait,check
-/dev/block/mmcblk1p1 /sdcard       vfat     nosuid,nodev                                       defaults
-/devices/platform/c0000000.soc/c0030000.ehci/usb2* auto auto defaults voldmanaged=usb:auto
-/devices/platform/c0000000.soc/c0040000.dwc2otg/usb1* auto auto defaults voldmanaged=usb:auto
+/dev/block/mmcblk0p3 /cache        ext4     noatime,nosuid,nodev,errors=panic                  wait,check
+/dev/block/mmcblk0p5 /recovery     emmc     defaults                                           defaults
+/dev/block/mmcblk0p6 /misc         emmc     defaults                                           defaults
+/dev/block/mmcblk0p8 /backup       ext4     defaults                                           defaults
+/dev/block/mmcblk0p9 /data         ext4     noatime,nosuid,nodev,errors=panic                  wait,check
+/devices/platform/c0000000.soc/c0069000.dwmmc/mmc_host* auto auto defaults voldmanaged=sdcard1:auto,encryptable=userdata
+/devices/platform/c0000000.soc/c0030000.ehci/usb2* auto auto defaults voldmanaged=sdcard2:auto,encryptable=userdata
+/devices/platform/c0000000.soc/c0040000.dwc2otg/usb1* auto auto defaults voldmanaged=sdcard2:auto,encryptable=userdata

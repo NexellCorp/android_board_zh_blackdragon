@@ -4,8 +4,9 @@
 flash=mmc,0:bl1:2nd:0x200,0x5ffe00:bootloader;
 flash=mmc,0:boot:emmc:0x600000,0x2000000:boot.img;
 flash=mmc,0:system:ext4:0x45B0000,0x80000000:system.img;
-flash=mmc,0:vendor:ext4:0x846B0000,0x4000000:vendor.img;
-flash=mmc,0:cache:ext4:0x887B0000,0x20000000:cache.img;
-flash=mmc,0:recovery:ext4:0xA88B0000,0x4000000:recovery.img;
-flash=mmc,0:misc:emmc:0xAC9B0000,0x100000:misc.img;
-flash=mmc,0:userdata:ext4:0xACBB0000,0:userdata.img;
+flash=mmc,0:cache:ext4:0x846B0000,0x40000000:cache.img;
+flash=mmc,0:recovery:ext4:0xc47B0000,0x4000000:recovery.img;
+flash=mmc,0:misc:emmc:0xc88B0000,0x100000:misc.img;
+flash=mmc,0:temp1:emmc:0xc8AB0000,0x200000:dumy.img;
+flash=mmc,0:backup:ext4:0xc8CB0000,0x40000000:backup.img;
+flash=mmc,0:userdata:ext4:0x108DB0000,0:userdata.img;
