@@ -276,3 +276,7 @@ endif
 PRODUCT_COPY_FILES += \
 	device/nexell/zh_blackdragon/zhong_lib/gps.default.so:system/lib/hw/gps.default.so \
 	device/nexell/zh_blackdragon/zhong_lib/u-blox.conf:system/etc/u-blox.conf
+
+# vold check fs
+PRODUCT_PROPERTY_OVERRIDES += \
+	persist.vold.check_fs=0
