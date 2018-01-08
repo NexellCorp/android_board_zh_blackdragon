@@ -316,7 +316,7 @@ if [ -f ${UBOOT_DIR}/u-boot.bin ]; then
 		${OUT_DIR}/ramdisk.img \
 		"boot:emmc")
 
-	UBOOT_RECOVERYCMD="ext4load mmc 0:6 0x49000000 recovery.dtb; ext4load mmc 0:6 0x40008000 recovery.kernel; ext4load mmc 0:6 0x48000000 ramdisk-recovery.img; bootz 40008000 0x48000000:27f000 0x49000000"
+	UBOOT_RECOVERYCMD="ext4load mmc 0:5 0x49000000 recovery.dtb; ext4load mmc 0:5 0x40008000 recovery.kernel; ext4load mmc 0:5 0x48000000 ramdisk-recovery.img; bootz 40008000 0x48000000:27f000 0x49000000"
 
 	UBOOT_BOOTARGS="console=ttyAMA3,115200n8 loglevel=7 printk.time=1 androidboot.hardware=zh_blackdragon androidboot.console=ttyAMA3 androidboot.serialno=s5p4418_zh_blackdragon quiet androidboot.selinux=permissive"
 
