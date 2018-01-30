@@ -649,3 +649,22 @@ index 689a668..b7a91eb 100644
  
  #ifdef DEBUG_SYNC
  	setup_timer(&me->timer, debug_sync, (long)me);
+diff --git fs/namei.c fs/namei.c
+index d185869..22ed090 100644
+--- fs/namei.c
++++ fs/namei.c
+@@ -3717,8 +3717,13 @@ int vfs_rmdir2(struct vfsmount *mnt, struct inode *dir, struct dentry *dentry)
+ 	mutex_lock(&dentry->d_inode->i_mutex);
+ 
+ 	error = -EBUSY;
+-	if (is_local_mountpoint(dentry))
++	/* psw0523 test */
++#if 0
++	if (is_local_mountpoint(dentry)) {
++		pr_err("%s %d: return %d\n", __func__, __LINE__, error);
+ 		goto out;
++	}
++#endif
+ 
+ 	error = security_inode_rmdir(dir, dentry);
+ 	if (error)
