@@ -77,6 +77,10 @@ on post-fs-data
     chmod 0666 /data/system/users/0/wallpaper
     chmod 0666 /data/system/users/0/wallpaper_info.xml
 
+    mkdir /data/misc/carlife 0770 shell shell
+    mkdir /data/misc/carlife/adb 0777 shell shell
+    mkdir /data/misc/carlife/usbmuxd 0777 shell shell
+
 on property:sys.boot_completed=1
     write /dev/cpuset/top-app/cpus 0-3
     write /dev/cpuset/foreground/boost/cpus 0-2
@@ -98,6 +102,8 @@ on property:sys.boot_completed=1
     exec -- /system/bin/init_gms_perm.sh
 
     class_start late_start
+
+    exec -- /system/bin/iproxy.sh
 
     write /sys/class/thermal/thermal_zone0/mode enabled
 
@@ -133,6 +139,11 @@ service mcuserver  /system/bin/mcuserver
     group root
 
 service gocsdk  /system/bin/gocsdk
+    class late_start
+    user root
+    group root
+
+service usbmuxd	/system/bin/usbmuxd
     class late_start
     user root
     group root
