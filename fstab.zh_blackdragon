@@ -12,4 +12,5 @@
 /dev/block/mmcblk0p9 /data         ext4     noatime,nosuid,nodev,errors=panic      latemount,wait,check
 /devices/platform/c0000000.soc/c0069000.dwmmc/mmc_host* auto auto defaults voldmanaged=sdcard1:auto,encryptable=userdata
 /devices/platform/c0000000.soc/c0030000.ehci/usb2* auto auto defaults voldmanaged=sdcard2:auto,encryptable=userdata
+/devices/platform/c0000000.soc/c0020000.ohci/usb3* auto auto defaults voldmanaged=sdcard2:auto,encryptable=userdata
 /devices/platform/c0000000.soc/c0040000.dwc2otg/usb1* auto auto defaults voldmanaged=sdcard2:auto,encryptable=userdata
