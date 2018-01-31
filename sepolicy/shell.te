@@ -1,2 +1,4 @@
 allow shell device:dir { open read };
 allow shell debugfs:dir read;
+allow shell system_data_file:sock_file { getattr write };
+allow shell usbmuxd:unix_stream_socket connectto;
