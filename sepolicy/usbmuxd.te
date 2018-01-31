@@ -1,0 +1,15 @@
+type usbmuxd, domain;
+type usbmuxd_exec, exec_type, file_type;
+
+init_daemon_domain(usbmuxd)
+
+allow usbmuxd rootfs:lnk_file getattr;
+allow usbmuxd self:capability { dac_override sys_resource };
+allow usbmuxd system_data_file:file { open write lock unlink create read getattr };
+allow usbmuxd system_data_file:dir { remove_name write add_name read open };
+allow usbmuxd system_data_file:sock_file { unlink create setattr };
+allow usbmuxd sysfs:file { open read getattr };
+allow usbmuxd self:netlink_kobject_uevent_socket { read create bind };
+allow usbmuxd usb_device:dir { open read };
+allow usbmuxd sysfs:dir { open read };
+allow usbmuxd usb_device:chr_file { read write open ioctl };
