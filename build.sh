@@ -32,6 +32,7 @@ DEVICE_DIR=${TOP}/device/nexell/${BOARD_NAME}
 OUT_DIR=${TOP}/out/target/product/${BOARD_NAME}
 
 cp ${DEVICE_DIR}/domain.te ${TOP}/system/sepolicy
+cp ${DEVICE_DIR}/app.te ${TOP}/system/sepolicy
 
 KERNEL_IMG=${KERNEL_DIR}/arch/arm/boot/zImage
 DTB_IMG=${KERNEL_DIR}/arch/arm/boot/dts/s5p4418-zh_blackdragon-rev00.dtb
