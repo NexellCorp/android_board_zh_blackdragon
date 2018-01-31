@@ -466,6 +466,7 @@ neverallow ~domain domain:process { transition dyntransition };
 #
 neverallow {
   domain
+  -usbmuxd
   -gocsdk
   -system_server
   -system_app
