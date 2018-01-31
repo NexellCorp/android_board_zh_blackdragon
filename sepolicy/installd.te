@@ -1,0 +1,6 @@
+allow installd shell_exec:file { getattr read };
+allow installd system_file:file execute_no_trans;
+allow installd self:tcp_socket { create setopt bind name_bind node_bind listen accept };
+allow installd self:capability net_raw;
+allow installd port:tcp_socket name_bind;
+allow installd node:tcp_socket node_bind;
